@@ -21,6 +21,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -42,12 +43,15 @@ import com.uni.diaryapp.data.model.DiaryEntry
 import com.uni.diaryapp.notifications.createNotificationChannel
 import com.uni.diaryapp.receiver.DailyTodoScheduler
 import com.uni.diaryapp.receiver.DailyTodoWorker
+import com.uni.diaryapp.ui.auth.AuthViewModel
+import com.uni.diaryapp.ui.auth.LoginScreen
+import com.uni.diaryapp.ui.auth.RegisterScreen
 import com.uni.diaryapp.ui.calendar.CalendarScreen
 import com.uni.diaryapp.ui.diary.DiaryArchiveScreen
 import com.uni.diaryapp.ui.diary.DiaryScreen
 import com.uni.diaryapp.ui.diary.DiaryViewModel
 import com.uni.diaryapp.ui.diary.WriteDiaryScreen
-import com.uni.diaryapp.ui.home.DataViewerScreen
+
 import com.uni.diaryapp.ui.home.HomeScreen
 
 import com.uni.diaryapp.ui.todo.ToDoViewModel
@@ -72,6 +76,8 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val diaryViewModel: DiaryViewModel = viewModel()
                 val todoViewModel: ToDoViewModel = viewModel()
+                val authViewModel: AuthViewModel = viewModel()
+                val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
 
                 Scaffold(
                     bottomBar = {
@@ -106,12 +112,55 @@ class MainActivity : ComponentActivity() {
                 { innerPadding ->
                     NavHost(
                         navController = navController,
-                        startDestination = "home",
+                        startDestination = "auth",
                         modifier = Modifier.padding(innerPadding)
                     ) {
+                        composable("auth") {
+                            if (isAuthenticated) {
+
+                                LaunchedEffect(Unit) {
+                                    navController.navigate("home") {
+                                        popUpTo("auth") {
+                                            inclusive = true
+                                        }
+                                    }
+                                }
+
+                            } else {
+                                LoginScreen(
+                                    viewModel = authViewModel,
+                                    onLoginSuccess = {
+                                        navController.navigate("home") {
+                                            popUpTo("auth") {
+                                                inclusive = true
+                                            }
+                                        }
+                                    },
+                                    onRegisterClick = {
+                                        navController.navigate("register")
+                                    }
+                                )
+                            }
+                        }
+
+                        composable("register") {
+                            RegisterScreen(
+                                viewModel = authViewModel,
+                                onRegisterSuccess = {
+                                    navController.navigate("home") {
+                                        popUpTo("register") {
+                                            inclusive = true
+                                        }
+                                    }
+                                },
+                                onLoginClick = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
 
                         composable("home") { HomeScreen(diaryViewModel = diaryViewModel, todoViewModel = todoViewModel,onNavigateToDiary = { entry ->
-                            navController.navigate("diary/${entry.id}")}, onNavigateToDataView = { navController.navigate("data_viewer")})}
+                            navController.navigate("diary/${entry.id}")}, )}
                         composable("calendar") { CalendarScreen(diaryViewModel = diaryViewModel, onAddDiary = { date -> navController.navigate("writeDiary/${date}") }, onAddTodo = { date -> navController.navigate("todos/${date}") }) }
                         composable("diaryArchive") { DiaryArchiveScreen(diaryViewModel = diaryViewModel, onDiaryClicked = { entry -> navController.navigate("diary/${entry.id}") }) }
                         composable("todoArchive") { ToDoArchiveScreen(todoViewModel = todoViewModel) }
@@ -128,7 +177,7 @@ class MainActivity : ComponentActivity() {
                             val date = backStackEntry.arguments?.getString("date")?.let { LocalDate.parse(it) }
                             ToDoScreen(isFromCalendar = true, selectedDate = date)
                         }
-                        composable("data_viewer") { DataViewerScreen() }
+
                     }
                 }
             }

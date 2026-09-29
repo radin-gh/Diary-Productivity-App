@@ -41,7 +41,7 @@ fun HomeScreen(
     diaryViewModel: DiaryViewModel = viewModel(),
     todoViewModel: ToDoViewModel = viewModel(),
     onNavigateToDiary: (DiaryEntry) -> Unit,
-    onNavigateToDataView: () -> Unit
+
 ) {
     val today = LocalDate.now()
 
@@ -228,13 +228,7 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Stored Data
-        OutlinedButton(
-            onClick = { onNavigateToDataView() },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("📂 View Stored Data")
-        }
+
     }
 }
 

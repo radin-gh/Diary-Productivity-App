@@ -12,8 +12,25 @@ class DiaryRepository(private val dao: DiaryDao) {
     }
 
     suspend fun delete(entry: DiaryEntry) {
-        dao.deleteEntry(entry)
+        dao.updateEntry(
+            entry.copy(
+                isDeleted = true,
+                updatedAt = System.currentTimeMillis()
+            )
+        )
     }
+
+    suspend fun update(entry: DiaryEntry) {
+        dao.updateEntry(entry)
+    }
+
+    suspend fun getDiaryByDate(date: Long): DiaryEntry? {
+        return dao.getDiaryByDate(date)
+    }
+    suspend fun getDiaryBySyncId(syncId: String): DiaryEntry? {
+        return dao.getDiaryBySyncId(syncId)
+    }
+
 }
 
 

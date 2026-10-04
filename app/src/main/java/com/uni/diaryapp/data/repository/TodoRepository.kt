@@ -17,6 +17,10 @@ class TodoRepository(private val todoDao: TodoDao) {
     fun getAllTodos(): Flow<List<TodoItem>> = todoDao.getAllTodos()
     fun getAllSync(): List<TodoItem> = todoDao.getAllSync()
 
+    suspend fun getTodoBySyncId(syncId: String): TodoItem? {
+        return todoDao.getTodoBySyncId(syncId)
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     fun getTodosByDate(date: LocalDate): Flow<List<TodoItem>> {
         val zone = java.time.ZoneId.systemDefault()
@@ -36,7 +40,16 @@ class TodoRepository(private val todoDao: TodoDao) {
 
     suspend fun insert(todo: TodoItem) = todoDao.insert(todo)
     suspend fun update(todo: TodoItem) = todoDao.update(todo)
-    suspend fun delete(todo: TodoItem) = todoDao.delete(todo)
+    suspend fun delete(todo: TodoItem) {
+        todoDao.update(
+            todo.copy(
+                isDeleted = true,
+                updatedAt = System.currentTimeMillis()
+            )
+        )
+    }
+
+
 }
 
 

@@ -5,12 +5,13 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.uni.diaryapp.data.model.DiaryEntry
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface DiaryDao {
-    @Query("SELECT * FROM diary_entries ORDER BY date DESC")
+    @Query("SELECT * FROM diary_entries WHERE isDeleted = 0 ORDER BY date DESC")
     fun getAllEntries(): Flow<List<DiaryEntry>>
 
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
@@ -24,4 +25,11 @@ interface DiaryDao {
 
     @Delete
     suspend fun deleteEntry(entry: DiaryEntry)
+
+    @Update
+    suspend fun updateEntry(entry: DiaryEntry)
+
+
+    @Query("SELECT * FROM diary_entries WHERE syncId = :syncId LIMIT 1")
+    suspend fun getDiaryBySyncId(syncId: String): DiaryEntry?
 }

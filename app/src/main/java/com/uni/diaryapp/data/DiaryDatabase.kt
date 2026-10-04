@@ -10,7 +10,7 @@ import com.uni.diaryapp.data.Dao.TodoDao
 import com.uni.diaryapp.data.model.DiaryEntry
 import com.uni.diaryapp.data.model.TodoItem
 
-@Database(entities = [DiaryEntry::class, TodoItem::class], version = 14, exportSchema = false)
+@Database(entities = [DiaryEntry::class, TodoItem::class], version = 15, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class DiaryDatabase : RoomDatabase() {
 

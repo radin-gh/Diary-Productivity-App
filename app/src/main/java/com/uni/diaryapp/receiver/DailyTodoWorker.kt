@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.google.firebase.auth.FirebaseAuth
 import com.uni.diaryapp.data.DiaryDatabase
 import com.uni.diaryapp.data.repository.TodoRepository
 import kotlinx.coroutines.flow.firstOrNull
@@ -31,11 +32,14 @@ class DailyTodoWorker(
             val repository = TodoRepository(db.todoDao())
 
             // Get today's tasks
-            val todosToday = repository.getTodosByDate(LocalDate.now()).firstOrNull() ?: emptyList()
+            val ownerUid = FirebaseAuth.getInstance().currentUser?.uid
+                ?: return Result.success()
+
+            val todos = repository.getTodosByDateSync(ownerUid, LocalDate.now())
 
             // Build message
-            val message = if (todosToday.isNotEmpty()) {
-                "✅ You have ${todosToday.size} task(s) for today!"
+            val message = if (todos.isNotEmpty()) {
+                "✅ You have ${todos.size} task(s) for today!"
             } else {
                 "📝 You don’t have any tasks today. Maybe add one for tomorrow?"
             }

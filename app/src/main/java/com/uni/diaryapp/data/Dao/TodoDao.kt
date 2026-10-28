@@ -9,18 +9,45 @@ import java.time.LocalDateTime
 
 @Dao
 interface TodoDao {
-    @Query("SELECT * FROM todos ORDER BY dueDate ASC")
-    fun getAllTodos(): Flow<List<TodoItem>>
+    @Query("""
+    SELECT * FROM todos
+    WHERE ownerUid = :ownerUid AND isDeleted = 0
+    ORDER BY dueDate ASC
+""")
+    fun getAllTodos(ownerUid: String): Flow<List<TodoItem>>
 
-    @Query("SELECT * FROM todos")
-    fun getAllSync(): List<TodoItem>
+    @Query("""
+    SELECT * FROM todos
+    WHERE ownerUid = :ownerUid
+""")
+    suspend fun getAllSync(ownerUid: String): List<TodoItem>
 
 
-    @Query("SELECT * FROM todos WHERE dueDate >= :startMillis AND dueDate < :endMillis")
-    fun getTodosBetween(startMillis: Long, endMillis: Long): Flow<List<TodoItem>>
+    @Query("""
+    SELECT * FROM todos
+    WHERE ownerUid = :ownerUid
+    AND isDeleted = 0
+    AND dueDate >= :startMillis
+    AND dueDate < :endMillis
+""")
+    fun getTodosBetween(
+        ownerUid: String,
+        startMillis: Long,
+        endMillis: Long
+    ): Flow<List<TodoItem>>
 
-    @Query("SELECT * FROM todos WHERE dueDate BETWEEN :startMillis AND :endMillis")
-    suspend fun getTodosBetweenSync(startMillis: Long, endMillis: Long): List<TodoItem>
+    @Query("""
+    SELECT * FROM todos
+    WHERE ownerUid = :ownerUid
+    AND isDeleted = 0
+    AND dueDate >= :startMillis
+    AND dueDate < :endMillis
+""")
+    suspend fun getTodosBetweenSync(
+        ownerUid: String,
+        startMillis: Long,
+        endMillis: Long
+    ): List<TodoItem>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(todo: TodoItem)
@@ -30,6 +57,16 @@ interface TodoDao {
 
     @Delete
     suspend fun delete(todo: TodoItem)
+
+    @Query("""
+    SELECT * FROM todos
+    WHERE ownerUid = :ownerUid AND syncId = :syncId
+    LIMIT 1
+""")
+    suspend fun getTodoBySyncId(
+        ownerUid: String,
+        syncId: String
+    ): TodoItem?
 }
 
 

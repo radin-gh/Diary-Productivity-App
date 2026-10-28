@@ -1,1 +1,28 @@
+*.iml
+.gradle
+/local.properties
+
+.idea/
+
+.DS_Store
 /build
+/captures
+.externalNativeBuild
+.cxx
+
+app/google-services.json
+
+
+# Generated files
+captures/
+.externalNativeBuild/
+.cxx/
+
+
+# Signing keys and credentials
+*.jks
+*.keystore
+keystore.properties
+secrets.properties
+.env
+.env.*

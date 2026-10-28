@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -40,6 +41,8 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 
 import com.uni.diaryapp.data.model.DiaryEntry
+import com.uni.diaryapp.data.worker.SyncScheduler
+import com.uni.diaryapp.data.worker.SyncWorker
 import com.uni.diaryapp.notifications.createNotificationChannel
 import com.uni.diaryapp.receiver.DailyTodoScheduler
 import com.uni.diaryapp.receiver.DailyTodoWorker
@@ -73,7 +76,10 @@ class MainActivity : ComponentActivity() {
         setContent {
 
             DiaryAppTheme {
+                val context = LocalContext.current
                 val navController = rememberNavController()
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
                 val diaryViewModel: DiaryViewModel = viewModel()
                 val todoViewModel: ToDoViewModel = viewModel()
                 val authViewModel: AuthViewModel = viewModel()
@@ -81,31 +87,69 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     bottomBar = {
-                        NavigationBar() {
-                            NavigationBarItem(
-                                selected = navController.currentBackStackEntryAsState().value?.destination?.route == "home",
-                                onClick = { navController.navigate("home") { launchSingleTop = true } },
-                                icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                                label = { Text("Home") }
-                            )
-                            NavigationBarItem(
-                                selected = navController.currentBackStackEntryAsState().value?.destination?.route == "calendar",
-                                onClick = { navController.navigate("calendar") { launchSingleTop = true } },
-                                icon = { Icon(Icons.Default.DateRange, contentDescription = "Calendar") },
-                                label = { Text("Calendar") }
-                            )
-                            NavigationBarItem(
-                                selected = navController.currentBackStackEntryAsState().value?.destination?.route == "diaryArchive",
-                                onClick = { navController.navigate("diaryArchive") { launchSingleTop = true } },
-                                icon = { Icon(Icons.Default.Create, contentDescription = "Diary Archive") },
-                                label = { Text("Diary") }
-                            )
-                            NavigationBarItem(
-                                selected = navController.currentBackStackEntryAsState().value?.destination?.route == "todoArchive",
-                                onClick = { navController.navigate("todoArchive") { launchSingleTop = true } },
-                                icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Todo Archive") },
-                                label = { Text("Todos") }
-                            )
+                        if (currentRoute != "auth" && currentRoute != "register") {
+                                NavigationBar() {
+                                    NavigationBarItem(
+                                        selected = navController.currentBackStackEntryAsState().value?.destination?.route == "home",
+                                        onClick = {
+                                            navController.navigate("home") {
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                        icon = {
+                                            Icon(
+                                                Icons.Default.Home,
+                                                contentDescription = "Home"
+                                            )
+                                        },
+                                        label = { Text("Home") }
+                                    )
+                                    NavigationBarItem(
+                                        selected = navController.currentBackStackEntryAsState().value?.destination?.route == "calendar",
+                                        onClick = {
+                                            navController.navigate("calendar") {
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                        icon = {
+                                            Icon(
+                                                Icons.Default.DateRange,
+                                                contentDescription = "Calendar"
+                                            )
+                                        },
+                                        label = { Text("Calendar") }
+                                    )
+                                    NavigationBarItem(
+                                        selected = navController.currentBackStackEntryAsState().value?.destination?.route == "diaryArchive",
+                                        onClick = {
+                                            navController.navigate("diaryArchive") {
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                        icon = {
+                                            Icon(
+                                                Icons.Default.Create,
+                                                contentDescription = "Diary Archive"
+                                            )
+                                        },
+                                        label = { Text("Diary") }
+                                    )
+                                    NavigationBarItem(
+                                        selected = navController.currentBackStackEntryAsState().value?.destination?.route == "todoArchive",
+                                        onClick = {
+                                            navController.navigate("todoArchive") {
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                        icon = {
+                                            Icon(
+                                                Icons.AutoMirrored.Filled.List,
+                                                contentDescription = "Todo Archive"
+                                            )
+                                        },
+                                        label = { Text("Todos") }
+                                    )
+                                }
                         }
                     }
                 )
@@ -160,7 +204,17 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("home") { HomeScreen(diaryViewModel = diaryViewModel, todoViewModel = todoViewModel,onNavigateToDiary = { entry ->
-                            navController.navigate("diary/${entry.id}")}, )}
+                            navController.navigate("diary/${entry.id}")},onLogout = {
+                            SyncScheduler.cancelSync(context)
+                            authViewModel.logout()
+
+                            navController.navigate("auth") {
+                                popUpTo("home") {
+                                    inclusive = true
+                                }
+                                launchSingleTop = true
+                            }
+                        } )}
                         composable("calendar") { CalendarScreen(diaryViewModel = diaryViewModel, onAddDiary = { date -> navController.navigate("writeDiary/${date}") }, onAddTodo = { date -> navController.navigate("todos/${date}") }) }
                         composable("diaryArchive") { DiaryArchiveScreen(diaryViewModel = diaryViewModel, onDiaryClicked = { entry -> navController.navigate("diary/${entry.id}") }) }
                         composable("todoArchive") { ToDoArchiveScreen(todoViewModel = todoViewModel) }
@@ -198,11 +252,21 @@ class MainActivity : ComponentActivity() {
         }
 
         createNotificationChannel(this)
-        val testWorkRequest = OneTimeWorkRequestBuilder<DailyTodoWorker>()
-            .setInitialDelay(5, TimeUnit.SECONDS) // triggers 5 seconds after app start
-            .build()
+        val testWorkRequest =
+            OneTimeWorkRequestBuilder<SyncWorker>()
+                .setInitialDelay(5, TimeUnit.SECONDS)
+                .build()
 
         WorkManager.getInstance(this).enqueue(testWorkRequest)
+        WorkManager.getInstance(this)
+            .getWorkInfoByIdLiveData(testWorkRequest.id)
+            .observe(this) { workInfo ->
+                android.util.Log.d(
+                    "SyncDebug",
+                    "Test worker state: ${workInfo?.state}"
+                )
+            }
+
     }
 
 

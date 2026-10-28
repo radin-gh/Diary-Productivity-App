@@ -14,6 +14,7 @@ data class TodoItem(
     val dueDate: Long,
     val syncId: String = UUID.randomUUID().toString(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val isDeleted: Boolean = false
+    val isDeleted: Boolean = false,
+    val ownerUid: String = "",
 
     )

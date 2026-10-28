@@ -9,31 +9,42 @@ import java.time.LocalDateTime
 
 @Dao
 interface TodoDao {
-    @Query("SELECT * FROM todos WHERE isDeleted = 0 ORDER BY dueDate ASC")
-    fun getAllTodos(): Flow<List<TodoItem>>
+    @Query("""
+    SELECT * FROM todos
+    WHERE ownerUid = :ownerUid AND isDeleted = 0
+    ORDER BY dueDate ASC
+""")
+    fun getAllTodos(ownerUid: String): Flow<List<TodoItem>>
 
-    @Query("SELECT * FROM todos")
-    fun getAllSync(): List<TodoItem>
+    @Query("""
+    SELECT * FROM todos
+    WHERE ownerUid = :ownerUid
+""")
+    suspend fun getAllSync(ownerUid: String): List<TodoItem>
 
 
     @Query("""
     SELECT * FROM todos
-    WHERE isDeleted = 0
+    WHERE ownerUid = :ownerUid
+    AND isDeleted = 0
     AND dueDate >= :startMillis
     AND dueDate < :endMillis
 """)
     fun getTodosBetween(
+        ownerUid: String,
         startMillis: Long,
         endMillis: Long
     ): Flow<List<TodoItem>>
 
     @Query("""
     SELECT * FROM todos
-    WHERE isDeleted = 0
+    WHERE ownerUid = :ownerUid
+    AND isDeleted = 0
     AND dueDate >= :startMillis
     AND dueDate < :endMillis
 """)
     suspend fun getTodosBetweenSync(
+        ownerUid: String,
         startMillis: Long,
         endMillis: Long
     ): List<TodoItem>
@@ -47,8 +58,15 @@ interface TodoDao {
     @Delete
     suspend fun delete(todo: TodoItem)
 
-    @Query("SELECT * FROM todos WHERE syncId = :syncId LIMIT 1")
-    suspend fun getTodoBySyncId(syncId: String): TodoItem?
+    @Query("""
+    SELECT * FROM todos
+    WHERE ownerUid = :ownerUid AND syncId = :syncId
+    LIMIT 1
+""")
+    suspend fun getTodoBySyncId(
+        ownerUid: String,
+        syncId: String
+    ): TodoItem?
 }
 
 

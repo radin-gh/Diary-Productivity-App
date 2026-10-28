@@ -10,6 +10,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import com.uni.diaryapp.data.worker.SyncScheduler
 
 @Composable
 fun LoginScreen(
@@ -26,6 +29,8 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onRegisterClick: () -> Unit
 ) {
+
+    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -33,8 +38,12 @@ fun LoginScreen(
     val error by viewModel.error.collectAsState()
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
 
-    if (isAuthenticated) {
-        onLoginSuccess()
+    LaunchedEffect(isAuthenticated) {
+        if (isAuthenticated) {
+            SyncScheduler.syncNow(context)
+            SyncScheduler.schedulePeriodicSync(context)
+
+        }
     }
 
     Column(

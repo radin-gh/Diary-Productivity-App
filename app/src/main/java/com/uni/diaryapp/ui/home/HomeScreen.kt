@@ -41,6 +41,7 @@ fun HomeScreen(
     diaryViewModel: DiaryViewModel = viewModel(),
     todoViewModel: ToDoViewModel = viewModel(),
     onNavigateToDiary: (DiaryEntry) -> Unit,
+    onLogout: () -> Unit
 
 ) {
     val today = LocalDate.now()
@@ -85,11 +86,26 @@ fun HomeScreen(
             .padding(16.dp)
     ) {
         //  Header
-        Text(
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {Text(
             "📖 My Diary App",
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold
         )
+
+            TextButton(onClick = onLogout) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = null
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Log out")
+            }
+        }
+
 
         Spacer(modifier = Modifier.height(24.dp))
 

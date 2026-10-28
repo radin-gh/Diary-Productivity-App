@@ -11,15 +11,44 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface DiaryDao {
-    @Query("SELECT * FROM diary_entries WHERE isDeleted = 0 ORDER BY date DESC")
-    fun getAllEntries(): Flow<List<DiaryEntry>>
+    @Query("""
+    SELECT * FROM diary_entries
+    WHERE ownerUid = :ownerUid AND isDeleted = 0
+    ORDER BY date DESC
+""")
+    fun getAllEntries(ownerUid: String): Flow<List<DiaryEntry>>
 
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun insertEntry(entry: DiaryEntry)
 
+    @Query("""
+    SELECT * FROM diary_entries
+    WHERE ownerUid = :ownerUid
+""")
+    suspend fun getAllSync(ownerUid: String): List<DiaryEntry>
 
-    @Query("SELECT * FROM diary_entries WHERE date = :date LIMIT 1")
-    suspend fun getDiaryByDate(date: Long): DiaryEntry?
+    @Query("""
+    SELECT * FROM diary_entries
+    WHERE ownerUid = :ownerUid AND syncId = :syncId
+    LIMIT 1
+""")
+    suspend fun getDiaryBySyncId(
+        ownerUid: String,
+        syncId: String
+    ): DiaryEntry?
+
+
+    @Query("""
+    SELECT * FROM diary_entries
+    WHERE ownerUid = :ownerUid
+      AND date = :date
+      AND isDeleted = 0
+    LIMIT 1
+""")
+    suspend fun getDiaryByDate(
+        ownerUid: String,
+        date: Long
+    ): DiaryEntry?
 
 
 
@@ -30,6 +59,4 @@ interface DiaryDao {
     suspend fun updateEntry(entry: DiaryEntry)
 
 
-    @Query("SELECT * FROM diary_entries WHERE syncId = :syncId LIMIT 1")
-    suspend fun getDiaryBySyncId(syncId: String): DiaryEntry?
 }

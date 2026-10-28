@@ -18,6 +18,7 @@ data class DiaryEntry(
     val pin: String? = null,
     val syncId: String = UUID.randomUUID().toString(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val isDeleted: Boolean = false
+    val isDeleted: Boolean = false,
+    val ownerUid: String = "",
 
 )
